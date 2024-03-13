@@ -1,7 +1,10 @@
 class PhotosController < ApplicationController
   before_action :set_photo, only: %i[ show edit update destroy ]
-  before_action :ensure_current_user_is_owner, only: [:destroy, :update, :edit]
+  before_action :authorize_photo, except: %i[index new]
 
+  def authorize_photo
+    authorize @photo
+  end
   # GET /photos or /photos.json
   def index
     @photos = Photo.all
@@ -14,6 +17,7 @@ class PhotosController < ApplicationController
   # GET /photos/new
   def new
     @photo = Photo.new
+    authorize @photo
   end
 
   # GET /photos/1/edit
@@ -24,6 +28,7 @@ class PhotosController < ApplicationController
   def create
     @photo = Photo.new(photo_params)
     @photo.owner = current_user
+    authorize @photo 
 
     respond_to do |format|
       if @photo.save
@@ -51,7 +56,10 @@ class PhotosController < ApplicationController
 
   # DELETE /photos/1 or /photos/1.json
   def destroy
+    @photo = Photo.find(params[:id])
+    authorize @photo
     @photo.destroy
+    
     respond_to do |format|
       format.html { redirect_back fallback_location: root_url, notice: "Photo was successfully destroyed." }
       format.json { head :no_content }
@@ -62,12 +70,6 @@ class PhotosController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_photo
       @photo = Photo.find(params[:id])
-    end
-
-    def ensure_current_user_is_owner
-      if current_user != @photo.owner
-        redirect_back fallback_location: root_url, alert: "You're not authorized for that."
-      end
     end
 
     # Only allow a list of trusted parameters through.
